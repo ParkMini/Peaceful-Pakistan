@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -17,6 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@100.100.
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+socketio = SocketIO(app)
 
 # 이미지 저장 경로 설정
 UPLOAD_FOLDER = 'uploads'
@@ -35,14 +37,16 @@ class User(db.Model):
     __tablename__ = 'users'
 
     idx = db.Column(db.BigInteger, primary_key=True)
-    username = db.Column(db.String, nullable=False, unique=True)
+    username = db.Column(db.String, nullable=False)
     password = db.Column(db.String, nullable=False)
+    phone = db.Column(db.String, nullable=False, unique=True)
     userType = db.Column(db.Enum(UserType), nullable=False)
 
     def to_dict(self):
         return {
             'idx': self.idx,
             'username': self.username,
+            'phone': self.phone,
             'userType': self.userType.value
         }
 
@@ -58,6 +62,8 @@ class RepairShop(db.Model):
     phone_number = db.Column(db.String, nullable=False)
     owner_id = db.Column(db.BigInteger, db.ForeignKey('users.idx'), nullable=False)
 
+    reviews = db.relationship('Review', backref='repair_shop', lazy=True)
+
     def to_dict(self):
         return {
             'idx': self.idx,
@@ -66,7 +72,8 @@ class RepairShop(db.Model):
             'category_id': self.category_id,
             'description': self.description,
             'phone_number': self.phone_number,
-            'owner_id': self.owner_id
+            'owner_id': self.owner_id,
+            'reviews': [review.to_dict() for review in self.reviews]
         }
 
 # 카테고리 모델 정의
@@ -95,6 +102,8 @@ class SearchRecord(db.Model):
     productName = db.Column(db.String, nullable=False)
     category_id = db.Column(db.BigInteger, db.ForeignKey('categories.idx'), nullable=False)
     user_id = db.Column(db.BigInteger, db.ForeignKey('users.idx'), nullable=False)
+    repair_shop_id = db.Column(db.BigInteger, db.ForeignKey('repair_shops.idx'), nullable=True)
+    price = db.Column(db.Float, nullable=True)
 
     def to_dict(self):
         return {
@@ -106,7 +115,45 @@ class SearchRecord(db.Model):
             'purchaseDate': self.purchaseDate,
             'productName': self.productName,
             'category_id': self.category_id,
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'repair_shop_id': self.repair_shop_id,
+            'price': self.price
+        }
+
+# 평점 모델 정의
+class Review(db.Model):
+    __tablename__ = 'reviews'
+
+    idx = db.Column(db.BigInteger, primary_key=True)
+    content = db.Column(db.String, nullable=False)
+    user_id = db.Column(db.BigInteger, db.ForeignKey('users.idx'), nullable=False)
+    repair_shop_id = db.Column(db.BigInteger, db.ForeignKey('repair_shops.idx'), nullable=False)
+    score = db.Column(db.String, nullable=False)
+
+    def to_dict(self):
+        return {
+            'idx': self.idx,
+            'content': self.content,
+            'user_id': self.user_id,
+            'repair_shop_id': self.repair_shop_id,
+            'score': self.score
+        }
+
+# 견적 모델 정의
+class Estimate(db.Model):
+    __tablename__ = 'estimates'
+
+    idx = db.Column(db.String, primary_key=True)
+    repair_shop_id = db.Column(db.BigInteger, db.ForeignKey('repair_shops.idx'), nullable=False)
+    search_record_id = db.Column(db.BigInteger, db.ForeignKey('search_records.idx'), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+    def to_dict(self):
+        return {
+            'idx': self.idx,
+            'repair_shop_id': self.repair_shop_id,
+            'search_record_id': self.search_record_id,
+            'price': self.price
         }
 
 # 데이터베이스 초기화
@@ -149,6 +196,7 @@ def register():
     new_user = User(
         username=data['username'],
         password=hashed_password,
+        phone=data['phone'],
         userType=UserType(data['userType'])
     )
     db.session.add(new_user)
@@ -159,7 +207,7 @@ def register():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(username=data['username']).first()
+    user = User.query.filter_by(phone=data['phone']).first()
     if user and bcrypt.check_password_hash(user.password, data['password']):
         session['user_id'] = user.idx
         session['username'] = user.username
@@ -167,44 +215,24 @@ def login():
         return jsonify({'message': '로그인 성공', 'user': user.to_dict()})
     return jsonify({'message': '로그인 실패'}), 401
 
-# 사용자 생성
-@app.route('/users', methods=['POST'])
-def create_user():
+# 판매자 등록 엔드포인트
+@app.route('/register_seller', methods=['POST'])
+def register_seller():
     data = request.get_json()
-    new_user = User(
-        username=data['username'],
-        password=bcrypt.generate_password_hash(data['password']).decode('utf-8'),
-        userType=UserType(data['userType'])
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify(new_user.to_dict()), 201
+    user = User.query.filter_by(phone=data['phone']).first()
+    if user:
+        user.username = data['username']
+        user.password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+        user.userType = UserType.SELLER
+        db.session.commit()
+        return jsonify(user.to_dict()), 200
+    return jsonify({'message': '등록 실패'}), 400
 
 # 사용자 조회
 @app.route('/users/<int:idx>', methods=['GET'])
 def get_user(idx):
     user = User.query.get_or_404(idx)
     return jsonify(user.to_dict())
-
-# 사용자 업데이트
-@app.route('/users/<int:idx>', methods=['PUT'])
-def update_user(idx):
-    data = request.get_json()
-    user = User.query.get_or_404(idx)
-    user.username = data.get('username', user.username)
-    if 'password' in data:
-        user.password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
-    user.userType = UserType(data.get('userType', user.userType.value))
-    db.session.commit()
-    return jsonify(user.to_dict())
-
-# 사용자 삭제
-@app.route('/users/<int:idx>', methods=['DELETE'])
-def delete_user(idx):
-    user = User.query.get_or_404(idx)
-    db.session.delete(user)
-    db.session.commit()
-    return '', 204
 
 # 수리점 등록
 @app.route('/repair_shops', methods=['POST'])
@@ -246,6 +274,8 @@ def create_search_record():
     purchase_date = int(data.get('purchase_date'))
     category_id = int(data.get('category_id'))
     question = data.get('question')
+    repair_shop_id = int(data.get('repair_shop_id'))
+    price = float(data.get('price'))
 
     # 이미지 파일 처리
     image_urls = []
@@ -271,27 +301,106 @@ def create_search_record():
         purchaseDate=purchase_date,
         productName=product_name,
         category_id=category_id,
-        user_id=user_id
+        user_id=user_id,
+        repair_shop_id=repair_shop_id,
+        price=price
     )
     db.session.add(new_search_record)
     db.session.commit()
 
     return jsonify(new_search_record.to_dict()), 201
 
-# AI 엔드포인트
-@app.route('/ai', methods=['POST'])
-def ai():
+# 평점 등록
+@app.route('/reviews', methods=['POST'])
+def create_review():
     data = request.get_json()
-    message = data.get('message')
-    
-    if not message:
-        return jsonify({'error': 'No message provided'}), 400
+    new_review = Review(
+        content=data['content'],
+        user_id=data['user_id'],
+        repair_shop_id=data['repair_shop_id'],
+        score=data['score']
+    )
+    db.session.add(new_review)
+    db.session.commit()
+    return jsonify(new_review.to_dict()), 201
 
-    youtube_links, response_message = send_message_and_get_response(message)
-    return jsonify({'youtube_links': youtube_links, 'message': response_message})
+# 수리점 조회 시 평점 포함
+@app.route('/repair_shops/<int:idx>', methods=['GET'])
+def get_repair_shop(idx):
+    repair_shop = RepairShop.query.get_or_404(idx)
+    return jsonify(repair_shop.to_dict())
+
+# 사용자의 모든 검색 기록 조회
+@app.route('/search_records', methods=['GET'])
+def get_all_search_records():
+    user_id = request.args.get('user_id')
+    search_records = SearchRecord.query.filter_by(user_id=user_id).all()
+    return jsonify([record.to_dict() for record in search_records])
+
+# 특정 검색 기록 조회
+@app.route('/search_records/<int:idx>', methods=['GET'])
+def get_search_record(idx):
+    search_record = SearchRecord.query.get_or_404(idx)
+    return jsonify(search_record.to_dict())
+
+# 견적 생성
+@app.route('/estimates', methods=['POST'])
+def create_estimate():
+    data = request.get_json()
+    new_estimate = Estimate(
+        idx=str(uuid.uuid4()),
+        repair_shop_id=data['repair_shop_id'],
+        search_record_id=data['search_record_id'],
+        price=data['price']
+    )
+    db.session.add(new_estimate)
+    db.session.commit()
+
+    # 소켓으로 데이터 전송
+    room = data['search_record_id']
+    estimate_data = {
+        "name": new_estimate.repair_shop.name,
+        "location": new_estimate.repair_shop.location,
+        "idx": new_estimate.idx,
+        "price": new_estimate.price
+    }
+    socketio.emit('new_estimate', estimate_data, room=room)
+    
+    return jsonify(new_estimate.to_dict()), 201
+
+# 소켓 엔드포인트
+@socketio.on('join')
+def on_join(data):
+    search_record_id = data['search_record_id']
+    join_room(search_record_id)
+    emit('message', {'msg': f'Joined room: {search_record_id}'})
+
+@socketio.on('leave')
+def on_leave(data):
+    search_record_id = data['search_record_id']
+    leave_room(search_record_id)
+    emit('message', {'msg': f'Left room: {search_record_id}'})
+
+# 견적 선택
+@app.route('/select_estimate', methods=['POST'])
+def select_estimate():
+    data = request.get_json()
+    search_record_id = data['search_record_id']
+    estimate = Estimate.query.filter_by(idx=data['estimate_id']).first_or_404()
+
+    search_record = SearchRecord.query.get_or_404(search_record_id)
+    search_record.repair_shop_id = estimate.repair_shop_id
+    search_record.price = estimate.price
+    db.session.commit()
+
+    # 소켓 서버 종료
+    socketio.emit('close_room', {'msg': 'Room closed'}, room=search_record_id)
+    leave_room(search_record_id)
+
+    return jsonify(search_record.to_dict()), 200
 
 def run_flask():
-    app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000)
 
 # Flask 서버를 별도의 스레드에서 실행
 threading.Thread(target=run_flask).start()
