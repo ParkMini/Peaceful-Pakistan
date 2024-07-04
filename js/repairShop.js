@@ -11,7 +11,7 @@ const getRepairShop = async (id) => {
 }
 
 const checkRepairShop = async (b_no, start_dt, p_nm) => {
-    postRequest("https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=%2BcetiQrNvXBv7SbdBJHa6%2BofRXmOPrTzF1N6eRUFslkPd1g%2FjFZLRQfqKyUggaXbUR%2FjuU%2BAyQ9UnxHADV56Bw%3D%3D", {
+    let data = await postRequest("https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=%2BcetiQrNvXBv7SbdBJHa6%2BofRXmOPrTzF1N6eRUFslkPd1g%2FjFZLRQfqKyUggaXbUR%2FjuU%2BAyQ9UnxHADV56Bw%3D%3D", {
         businesses: [
             {
                 b_no: b_no,
@@ -26,13 +26,49 @@ const checkRepairShop = async (b_no, start_dt, p_nm) => {
             }
         ]
     })
+    console.log(data)
+    data.data
+}
+
+const checkRepairShopA = () => {
+    let json = {
+        "request_cnt": 1,
+        "status_code": "OK",
+        "data": [
+            {
+                "b_no": "0000000000",
+                "valid": "02",
+                "valid_msg": "확인할 수 없습니다.",
+                "request_param": {
+                    "b_no": "0000000000",
+                    "start_dt": "20000101",
+                    "p_nm": "홍길동",
+                    "p_nm2": "홍길동",
+                    "b_nm": "(주)테스트",
+                    "corp_no": "0000000000000",
+                    "b_type": "",
+                    "b_sector": "",
+                    "b_adr": ""
+                }
+            }
+        ]
+    }
+
+    location.href = "/repair_shops/add"
 }
 
 const createRepairShop = async () => {
     let form = document.getElementById("repairShopForm");
 
     let formData = new FormData(form)
-    let data = await postRequest("/repair_shops", formData)
+    let data = await postRequest("/repair_shops", {
+        "name": formData.get("name"),
+        "location": formData.get("location"),
+        "category_id": formData.get("categorys"),
+        "description": formData.get("description"),
+        "phone_number": formData.get("phoneNumber"),
+        "owner_id": localStorage.getItem("userIdx")
+    })
     .then(response => response.json())
     data.idx
 }
