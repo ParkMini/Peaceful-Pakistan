@@ -49,3 +49,76 @@ html, body {
 #index p a {
     text-decoration: none;
 }
+
+.registerPage h1 {
+    padding: 10px;
+}
+
+.registerPage .signupForm {
+    width: 100%;
+    margin: 0 auto;
+    text-align: center; /* 부모 요소에 중앙 정렬 적용 */
+}
+
+.registerPage .signupForm div {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.registerPage .signupForm div p {
+    text-align: left; /* p 태그 왼쪽 정렬 */
+    margin-left: 5%; /* p 태그를 조금 오른쪽으로 이동 (선택 사항) */
+}
+
+.registerPage .signupForm div input {
+    font-size: 24px;
+    width: 90%;
+    padding: 6px 0 0 5px;
+    display: block; /* input 요소를 블록 요소로 설정 */
+    margin: 0 auto; /* input 요소 중앙 정렬 */
+}
+
+.registerPage button {
+    background-color: var(--main-color);
+    color: white;
+    width: 90%;
+    padding: 15px 0;
+    margin-top: 20px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 0;
+    text-align: center; /* 버튼 내부 텍스트를 중앙 정렬 */
+}
+
+#register_complete .center-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 180px;
+}
+
+#register_complete .center-content i {
+    font-size: 100px;
+    color: white;
+    background-color: var(--main-color);
+    border-radius: 50%;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+#register_complete .bottom-button {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--main-color);
+    color: white;
+    width: 90%;
+    padding: 15px 0;
+    margin: 20px 0;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 0;
+    text-align: center;
+}
