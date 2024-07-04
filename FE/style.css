@@ -87,7 +87,7 @@ html, body {
     font-size: 16px;
     border-radius: 10px;
     border: 0;
-    text-align: center; /* 버튼 내부 텍스트를 중앙 정렬 */
+    text-align: center;
 }
 
 #register_complete .center-content {
@@ -121,4 +121,80 @@ html, body {
     border-radius: 10px;
     border: 0;
     text-align: center;
+}
+
+#main #helpyouinformationmessage {
+    margin: 20px 0 0 10px;
+}
+
+#main .images .image img {
+    border-radius: 20px;
+    width: 100px;
+}
+
+#main .images {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#main #center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+#main .formbtn {
+    background-color: var(--main-color);
+    color: white;
+    width: 90%;
+    padding: 10px 0;
+    margin-top: 10px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 0;
+    text-align: center;
+}
+
+#main #center > div input {
+    font-size: 18px;
+    width: 90%;
+    padding: 6px 0 0 5px;
+    display: block; /* input 요소를 블록 요소로 설정 */
+    margin: 0 auto; /* input 요소 중앙 정렬 */
+    border-radius: 8px;
+    border: solid 1px black;
+}
+
+#main #center > div textarea {
+    border: solid 1px black;
+    border-radius: 8px;
+    font-size: 18px;
+    padding: 6px 0 0 5px;
+}
+
+#main .buttonright a {
+    background-color: var(--main-color);
+    color: white;
+    width: 25%;
+    padding: 10px 0;
+    margin-top: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 0;
+    text-align: center;
+}
+
+#main .buttonright a button {
+    background-color: var(--main-color);
+    color: white;
+    font-size: 16px;
+    border: 0;
+}
+
+.buttonright {
+    width: 94%;
+    display: flex;
+    justify-content: end;
 }
