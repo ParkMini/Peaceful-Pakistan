@@ -4,8 +4,11 @@ from flask_bcrypt import Bcrypt
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from PIL import Image
 import time
 import threading
+import os
+import uuid
 from enum import Enum
 
 app = Flask(__name__)
@@ -14,6 +17,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@100.100.
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+
+# 이미지 저장 경로 설정
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # 사용자 유형 열거형 정의
 class UserType(Enum):
@@ -71,6 +80,33 @@ class Category(db.Model):
         return {
             'idx': self.idx,
             'name': self.name
+        }
+
+# 검색기록 모델 정의
+class SearchRecord(db.Model):
+    __tablename__ = 'search_records'
+
+    idx = db.Column(db.BigInteger, primary_key=True)
+    question = db.Column(db.String, nullable=False)
+    message = db.Column(db.String, nullable=False)
+    videoUrl = db.Column(db.ARRAY(db.String), nullable=False)
+    questionImgUrl = db.Column(db.String, nullable=False)
+    purchaseDate = db.Column(db.Integer, nullable=False)
+    productName = db.Column(db.String, nullable=False)
+    category_id = db.Column(db.BigInteger, db.ForeignKey('categories.idx'), nullable=False)
+    user_id = db.Column(db.BigInteger, db.ForeignKey('users.idx'), nullable=False)
+
+    def to_dict(self):
+        return {
+            'idx': self.idx,
+            'question': self.question,
+            'message': self.message,
+            'videoUrl': self.videoUrl,
+            'questionImgUrl': self.questionImgUrl,
+            'purchaseDate': self.purchaseDate,
+            'productName': self.productName,
+            'category_id': self.category_id,
+            'user_id': self.user_id
         }
 
 # 데이터베이스 초기화
@@ -200,6 +236,47 @@ def create_category():
 def get_repair_shops_by_category(category_id):
     repair_shops = RepairShop.query.filter_by(category_id=category_id).all()
     return jsonify([repair_shop.to_dict() for repair_shop in repair_shops])
+
+# 검색기록 생성 및 AI 처리
+@app.route('/search_records', methods=['POST'])
+def create_search_record():
+    data = request.form
+    user_id = data.get('user_id')
+    product_name = data.get('product_name')
+    purchase_date = int(data.get('purchase_date'))
+    category_id = int(data.get('category_id'))
+    question = data.get('question')
+
+    # 이미지 파일 처리
+    image_urls = []
+    files = request.files.getlist('images')
+    for file in files:
+        filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        image_urls.append(file_path)
+
+    # AI 질문 생성
+    ai_question = f"{product_name} 제품을 {purchase_date}년 전에 구매했는데, {question} 문제가 있어. 어떻게 해결하면 돼?"
+
+    # AI 응답 처리
+    youtube_links, response_message = send_message_and_get_response(ai_question)
+
+    # 검색 기록 저장
+    new_search_record = SearchRecord(
+        question=question,
+        message=response_message,
+        videoUrl=youtube_links,
+        questionImgUrl=','.join(image_urls),
+        purchaseDate=purchase_date,
+        productName=product_name,
+        category_id=category_id,
+        user_id=user_id
+    )
+    db.session.add(new_search_record)
+    db.session.commit()
+
+    return jsonify(new_search_record.to_dict()), 201
 
 # AI 엔드포인트
 @app.route('/ai', methods=['POST'])
