@@ -37,6 +37,42 @@ class User(db.Model):
             'userType': self.userType.value
         }
 
+# 수리점 모델 정의
+class RepairShop(db.Model):
+    __tablename__ = 'repair_shops'
+
+    idx = db.Column(db.BigInteger, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    location = db.Column(db.String, nullable=False)
+    category_id = db.Column(db.BigInteger, db.ForeignKey('categories.idx'), nullable=False)
+    description = db.Column(db.String, nullable=True)
+    phone_number = db.Column(db.String, nullable=False)
+    owner_id = db.Column(db.BigInteger, db.ForeignKey('users.idx'), nullable=False)
+
+    def to_dict(self):
+        return {
+            'idx': self.idx,
+            'name': self.name,
+            'location': self.location,
+            'category_id': self.category_id,
+            'description': self.description,
+            'phone_number': self.phone_number,
+            'owner_id': self.owner_id
+        }
+
+# 카테고리 모델 정의
+class Category(db.Model):
+    __tablename__ = 'categories'
+
+    idx = db.Column(db.BigInteger, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+
+    def to_dict(self):
+        return {
+            'idx': self.idx,
+            'name': self.name
+        }
+
 # 데이터베이스 초기화
 with app.app_context():
     db.create_all()
@@ -133,6 +169,37 @@ def delete_user(idx):
     db.session.delete(user)
     db.session.commit()
     return '', 204
+
+# 수리점 등록
+@app.route('/repair_shops', methods=['POST'])
+def create_repair_shop():
+    data = request.get_json()
+    new_repair_shop = RepairShop(
+        name=data['name'],
+        location=data['location'],
+        category_id=data['category_id'],
+        description=data.get('description', ''),
+        phone_number=data['phone_number'],
+        owner_id=data['owner_id']
+    )
+    db.session.add(new_repair_shop)
+    db.session.commit()
+    return jsonify(new_repair_shop.to_dict()), 201
+
+# 카테고리 등록
+@app.route('/categories', methods=['POST'])
+def create_category():
+    data = request.get_json()
+    new_category = Category(name=data['name'])
+    db.session.add(new_category)
+    db.session.commit()
+    return jsonify(new_category.to_dict()), 201
+
+# 카테고리에 따른 수리점 목록 조회
+@app.route('/categories/<int:category_id>/repair_shops', methods=['GET'])
+def get_repair_shops_by_category(category_id):
+    repair_shops = RepairShop.query.filter_by(category_id=category_id).all()
+    return jsonify([repair_shop.to_dict() for repair_shop in repair_shops])
 
 # AI 엔드포인트
 @app.route('/ai', methods=['POST'])
