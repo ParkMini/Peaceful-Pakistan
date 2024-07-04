@@ -5,6 +5,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from flask_cors import CORS
 from PIL import Image
 import time
 import threading
@@ -19,6 +20,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app)
+CORS(app, supports_credentials=True)
 
 # 이미지 저장 경로 설정
 UPLOAD_FOLDER = 'uploads'
