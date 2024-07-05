@@ -22,8 +22,8 @@
       </div>
     </div>
     <div id="center">
-      <button class="formbtn">카테고리를 선택해주세요.</button>
-      <button class="formbtn">구매기간을 선택해주세요.</button>
+      <button class="formbtn" id="categoryBtn">카테고리를 선택해주세요.</button>
+      <button class="formbtn" id="periodBtn">구매기간을 선택해주세요.</button>
       <br />
       <div>
         <p>제품명</p>
@@ -41,7 +41,7 @@
       </div>
     </div>
     <div class="buttonright">
-      <a href=""><button>검색하기</button></a>
+      <a href="./loading.html"><button>검색하기</button></a>
     </div>
     <nav>
       <ul>
@@ -54,7 +54,7 @@
         </li>
         <li>
           <a href="#"
-            ><button><i class="fas fa-history"></i> <br />기록보기</button></a
+            ><button><i class="fas fa-history"></i><br />기록보기</button></a
           >
         </li>
         <li>
@@ -71,21 +71,126 @@
         </li>
       </ul>
     </nav>
+
+    <!-- 모달 구조 -->
+    <div id="categoryModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeCategory">&times;</span>
+        <p>카테고리</p>
+        <ul class="category-list">
+          <li data-category="TV">TV</li>
+          <li data-category="컴퓨터">컴퓨터</li>
+          <li data-category="휴대폰">휴대폰</li>
+          <li data-category="태블릿">태블릿</li>
+          <li data-category="냉장고">냉장고</li>
+          <li data-category="세탁기">세탁기</li>
+          <li data-category="전자레인지">전자레인지</li>
+          <li data-category="에어컨">에어컨</li>
+          <li data-category="자동차">자동차</li>
+          <li data-category="오토바이">오토바이</li>
+          <li data-category="자전거">자전거</li>
+          <li data-category="기타">기타</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="periodModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closePeriod">&times;</span>
+        <p>구매기간</p>
+        <div class="slider-container">
+          <input
+            type="range"
+            id="periodSlider"
+            min="0"
+            max="10"
+            step="1"
+            value="0"
+          />
+          <span id="sliderValue">1년 미만</span>
+        </div>
+      </div>
+    </div>
+
     <script>
-        document.getElementById('addImage').addEventListener('click', function() {
-            document.getElementById('fileInput').click();
-          });
-    
-          document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                document.getElementById('addImage').src = e.target.result;
-              }
-              reader.readAsDataURL(file);
-            }
-          });
+      // 이미지 업로드 기능
+      document
+        .getElementById("addImage")
+        .addEventListener("click", function () {
+          document.getElementById("fileInput").click();
+        });
+
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              document.getElementById("addImage").src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+      // 모달 기능
+      var categoryModal = document.getElementById("categoryModal");
+      var periodModal = document.getElementById("periodModal");
+      var categoryBtn = document.getElementById("categoryBtn");
+      var periodBtn = document.getElementById("periodBtn");
+      var closeCategory = document.getElementById("closeCategory");
+      var closePeriod = document.getElementById("closePeriod");
+
+      categoryBtn.onclick = function () {
+        categoryModal.style.display = "block";
+      };
+
+      periodBtn.onclick = function () {
+        periodModal.style.display = "block";
+      };
+
+      closeCategory.onclick = function () {
+        categoryModal.style.display = "none";
+      };
+
+      closePeriod.onclick = function () {
+        periodModal.style.display = "none";
+      };
+
+      window.onclick = function (event) {
+        if (event.target == categoryModal) {
+          categoryModal.style.display = "none";
+        } else if (event.target == periodModal) {
+          periodModal.style.display = "none";
+        }
+      };
+
+      // 카테고리 선택 기능
+      document.querySelectorAll(".category-list li").forEach(function (item) {
+        item.addEventListener("click", function () {
+          var category = this.getAttribute("data-category");
+          categoryBtn.textContent = category;
+          categoryModal.style.display = "none";
+        });
+      });
+
+      // 구매기간 슬라이더 기능
+      var periodSlider = document.getElementById("periodSlider");
+      var sliderValue = document.getElementById("sliderValue");
+
+      periodSlider.oninput = function () {
+        var value = periodSlider.value;
+        if (value == 0) {
+          sliderValue.textContent = "1년 미만";
+          periodBtn.textContent = "구매기간: 1년 미만";
+        } else if (value == 10) {
+          sliderValue.textContent = "10년 이상";
+          periodBtn.textContent = "구매기간: 10년 이상";
+        } else {
+          sliderValue.textContent = value + "년";
+          periodBtn.textContent = "구매기간: " + value + "년";
+        }
+      };
     </script>
   </body>
 </html>
