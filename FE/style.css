@@ -176,7 +176,7 @@ body {
   padding: 6px 0 0 5px;
 }
 
-#main .buttonright a, #result > a {
+#main .buttonright a, #result > a, #ai_result > a {
   background-color: var(--main-color);
   color: white;
   width: 25%;
@@ -188,7 +188,7 @@ body {
   text-align: center;
 }
 
-#main .buttonright a button, #result > a button {
+#main .buttonright a button, #result > a button, #ai_result > a button {
   background-color: var(--main-color);
   color: white;
   font-size: 16px;
@@ -305,7 +305,7 @@ nav ul li a button.active {
   padding: 5px 10px;
 }
 
-#result > a {
+#result > a, #ai_result > a {
   display: block;
   width: 100%;
 }
