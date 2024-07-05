@@ -176,7 +176,7 @@ body {
   padding: 6px 0 0 5px;
 }
 
-#main .buttonright a {
+#main .buttonright a, #result > a {
   background-color: var(--main-color);
   color: white;
   width: 25%;
@@ -188,7 +188,7 @@ body {
   text-align: center;
 }
 
-#main .buttonright a button {
+#main .buttonright a button, #result > a button {
   background-color: var(--main-color);
   color: white;
   font-size: 16px;
@@ -208,6 +208,8 @@ nav ul {
   list-style: none;
   position: fixed;
   bottom: 0;
+  background: white;
+  padding: 5px 0;
 }
 
 nav ul li a button {
@@ -296,4 +298,14 @@ nav ul li a button.active {
   border-radius: 50%;
   padding: 20px;
   margin-bottom: 20px;
+}
+
+#ai_result {
+  background: #eee;
+  padding: 5px 10px;
+}
+
+#result > a {
+  display: block;
+  width: 100%;
 }
