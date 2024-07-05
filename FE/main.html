@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>이게 뭐야</title>
     <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
   </head>
   <body id="main">
     <div id="helpyouinformationmessage">
@@ -13,7 +17,8 @@
     </div>
     <div class="images">
       <div class="image">
-        <img src="./images/add_image.png" alt="" />
+        <img id="addImage" src="./images/add_image.png" alt="add image" />
+        <input type="file" id="fileInput" accept="image/*" />
       </div>
     </div>
     <div id="center">
@@ -26,11 +31,61 @@
       </div>
       <div>
         <p>설명글</p>
-        <textarea name="content" id="content" cols="22" rows="6" placeholder="전원이 켜지지 않아요."></textarea>
+        <textarea
+          name="content"
+          id="content"
+          cols="22"
+          rows="6"
+          placeholder="전원이 켜지지 않아요."
+        ></textarea>
       </div>
     </div>
     <div class="buttonright">
-        <a href=""><button>검색하기</button></a>
+      <a href=""><button>검색하기</button></a>
     </div>
+    <nav>
+      <ul>
+        <li>
+          <a href="./main.html"
+            ><button class="active">
+              <i class="fas fa-search"></i><br />AI 검색
+            </button></a
+          >
+        </li>
+        <li>
+          <a href="#"
+            ><button><i class="fas fa-history"></i> <br />기록보기</button></a
+          >
+        </li>
+        <li>
+          <a href="#"
+            ><button>
+              <i class="fas fa-map-marker-alt"></i><br />주변 수리점
+            </button></a
+          >
+        </li>
+        <li>
+          <a href="#"
+            ><button><i class="fas fa-user"></i><br />마이페이지</button></a
+          >
+        </li>
+      </ul>
+    </nav>
+    <script>
+        document.getElementById('addImage').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+          });
+    
+          document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                document.getElementById('addImage').src = e.target.result;
+              }
+              reader.readAsDataURL(file);
+            }
+          });
+    </script>
   </body>
 </html>
